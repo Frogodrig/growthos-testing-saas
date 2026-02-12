@@ -21,7 +21,7 @@ export async function authMiddleware(
     const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
     (request as any).auth = payload;
   } catch {
-    reply.status(401).send({ error: "Invalid or expired token" });
+    return reply.status(401).send({ error: "Invalid or expired token" });
   }
 }
 

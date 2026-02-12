@@ -5,6 +5,7 @@ import { createCoreEngine, CoreEngine } from "@growthos/core-engine";
 import { authMiddleware } from "./middleware/auth";
 import { registerLeadRoutes } from "./routes/leads";
 import { registerMetricsRoutes } from "./routes/metrics";
+import { registerDevRoutes } from "./routes/dev";
 
 export interface GatewayConfig {
   port: number;
@@ -40,6 +41,12 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   // Register routes
   registerLeadRoutes(app, engine);
   registerMetricsRoutes(app, engine);
+
+  // Dev routes (no auth required) — only for local development
+  if (process.env.NODE_ENV !== "production") {
+    registerDevRoutes(app, engine);
+    console.log("[Gateway] Dev routes enabled: POST /dev/bootstrap");
+  }
 
   // Graceful shutdown
   const shutdown = async () => {
