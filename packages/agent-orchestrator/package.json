@@ -1,0 +1,21 @@
+{
+  "name": "@growthos/agent-orchestrator",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@growthos/shared-types": "*",
+    "@growthos/agents": "*",
+    "@growthos/rules-engine": "*",
+    "@growthos/event-bus": "*",
+    "@prisma/client": "^5.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

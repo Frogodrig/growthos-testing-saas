@@ -1,0 +1,20 @@
+{
+  "name": "@growthos/scheduler",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@growthos/shared-types": "*",
+    "@growthos/core-engine": "*",
+    "@prisma/client": "^5.9.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@growthos/saas-followup",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.ts"
+  },
+  "dependencies": {
+    "@growthos/shared-types": "*",
+    "@growthos/core-engine": "*",
+    "@growthos/api-gateway": "*",
+    "@growthos/worker": "*",
+    "@growthos/scheduler": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

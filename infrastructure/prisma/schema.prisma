@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────
+// Multi-tenancy
+// ──────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String   @unique
+  plan      String   @default("free") // free | starter | pro | enterprise
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  leads           Lead[]
+  meetings        Meeting[]
+  messages        Message[]
+  workflows       Workflow[]
+  agentLogs       AgentLog[]
+  patternInsights PatternInsight[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  email     String
+  name      String
+  role      String   @default("member") // admin | member
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────
+// Core Business Entities
+// ──────────────────────────────────────────────
+
+model Lead {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  name                String
+  email               String
+  phone               String?
+  source              String
+  status              String   @default("new") // new | qualified | unqualified | contacted | meeting_scheduled | converted | lost
+  score               Int?
+  qualificationReason String?
+  metadata            Json     @default("{}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  meetings  Meeting[]
+  messages  Message[]
+  workflows Workflow[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("leads")
+}
+
+model Meeting {
+  id          String   @id @default(uuid())
+  tenantId    String
+  leadId      String
+  scheduledAt DateTime
+  duration    Int      @default(30) // minutes
+  status      String   @default("pending") // pending | confirmed | cancelled | completed
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("meetings")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  tenantId  String
+  leadId    String
+  direction String // inbound | outbound
+  channel   String // email | sms | webhook
+  content   String
+  sentAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, leadId])
+  @@map("messages")
+}
+
+// ──────────────────────────────────────────────
+// Workflow & Orchestration
+// ──────────────────────────────────────────────
+
+model Workflow {
+  id            String   @id @default(uuid())
+  tenantId      String
+  leadId        String
+  workflowType  String // lead_flow | followup_flow | qualification_flow
+  currentState  String   @default("lead_received")
+  goal          String
+  allowedAgents Json     @default("[]") // AgentType[]
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  agentLogs AgentLog[]
+
+  @@index([tenantId])
+  @@index([tenantId, currentState])
+  @@map("workflows")
+}
+
+model AgentLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  workflowId String
+  agentType  String // qualifier | scheduler | followup
+  input      Json
+  output     Json
+  durationMs Int
+  success    Boolean
+  error      String?
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([workflowId])
+  @@map("agent_logs")
+}
+
+// ──────────────────────────────────────────────
+// Pattern Memory
+// ──────────────────────────────────────────────
+
+model PatternInsight {
+  id          String   @id @default(uuid())
+  tenantId    String
+  insightType String // objection_frequency | response_rate | conversion_stat
+  data        Json
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, insightType])
+  @@map("pattern_insights")
+}
