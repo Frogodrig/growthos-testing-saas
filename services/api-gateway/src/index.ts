@@ -1,5 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
+import * as Sentry from "@sentry/node";
 import type { SaaSConfig } from "@growthos/shared-types";
 import { createCoreEngine, CoreEngine } from "@growthos/core-engine";
 import { authMiddleware, isAuthExempt, isSubscriptionExempt } from "./middleware/auth";
@@ -17,8 +19,24 @@ export interface GatewayConfig {
 }
 
 export async function startGateway(config: GatewayConfig): Promise<void> {
+  // Initialize Sentry if DSN is configured
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || "development",
+      tracesSampleRate: 0.1,
+    });
+    console.log("[Gateway] Sentry error tracking enabled");
+  }
+
   const app = Fastify({
-    logger: true,
+    logger: {
+      level: process.env.NODE_ENV === "production" ? "info" : "debug",
+      transport:
+        process.env.NODE_ENV !== "production"
+          ? { target: "pino-pretty" }
+          : undefined,
+    },
   });
 
   // Register raw body support for Stripe webhooks
@@ -37,7 +55,27 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
     }
   );
 
-  await app.register(cors, { origin: true });
+  // CORS — restrict in production to known domains
+  const corsOrigin =
+    process.env.NODE_ENV === "production"
+      ? [
+          process.env.BOOKER_URL,
+          process.env.LEADQUALIFIER_URL,
+          process.env.FOLLOWUP_URL,
+        ].filter(Boolean) as string[]
+      : true;
+  await app.register(cors, { origin: corsOrigin });
+
+  // Rate limiting — protect public endpoints
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+    keyGenerator: (request) => {
+      // Use tenant ID if authenticated, otherwise IP
+      const auth = (request as any).auth;
+      return auth?.tenantId || request.ip;
+    },
+  });
 
   // Initialize core engine
   const engine = createCoreEngine({
@@ -103,6 +141,23 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
         subscriptionStatus: tenant.subscriptionStatus,
       });
     }
+  });
+
+  // Global error handler — report to Sentry
+  app.setErrorHandler((error, request, reply) => {
+    if (process.env.SENTRY_DSN) {
+      Sentry.captureException(error, {
+        extra: {
+          url: request.url,
+          method: request.method,
+          tenantId: (request as any).auth?.tenantId,
+        },
+      });
+    }
+    request.log.error(error);
+    reply.status(error.statusCode || 500).send({
+      error: error.message || "Internal Server Error",
+    });
   });
 
   // Health check (no auth)

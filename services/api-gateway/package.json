@@ -9,11 +9,13 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@growthos/shared-types": "*",
-    "@growthos/core-engine": "*",
-    "@prisma/client": "^5.9.0",
-    "fastify": "^4.26.0",
     "@fastify/cors": "^9.0.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@growthos/core-engine": "*",
+    "@growthos/shared-types": "*",
+    "@prisma/client": "^5.9.0",
+    "@sentry/node": "^10.38.0",
+    "fastify": "^4.26.0",
     "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {

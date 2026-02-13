@@ -1,0 +1,113 @@
+# ══════════════════════════════════════════════
+# GrowthOS Production Docker Compose
+# ══════════════════════════════════════════════
+# For self-hosted deployment. For Railway/Render, use their dashboards instead.
+# Usage: docker compose -f infrastructure/docker-compose.production.yml up -d
+
+services:
+  # ── AI Booker SaaS ──────────────────────────
+  saas-booker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-booker/dist/index.js"]
+    env_file: ../.env.production
+    environment:
+      PORT: "3001"
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── AI Lead Qualifier SaaS ──────────────────
+  saas-leadqualifier:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-leadqualifier/dist/index.js"]
+    env_file: ../.env.production
+    environment:
+      PORT: "3002"
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── AI FollowUp SaaS ───────────────────────
+  saas-followup:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-followup/dist/index.js"]
+    env_file: ../.env.production
+    environment:
+      PORT: "3003"
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Workers (one per SaaS) ──────────────────
+  worker-booker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-booker/dist/worker.js"]
+    env_file: ../.env.production
+    restart: unless-stopped
+
+  worker-leadqualifier:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-leadqualifier/dist/worker.js"]
+    env_file: ../.env.production
+    restart: unless-stopped
+
+  worker-followup:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-followup/dist/worker.js"]
+    env_file: ../.env.production
+    restart: unless-stopped
+
+  # ── Schedulers (one per SaaS) ───────────────
+  scheduler-booker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-booker/dist/scheduler.js"]
+    env_file: ../.env.production
+    restart: unless-stopped
+
+  scheduler-leadqualifier:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-leadqualifier/dist/scheduler.js"]
+    env_file: ../.env.production
+    restart: unless-stopped
+
+  scheduler-followup:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["node", "apps/saas-followup/dist/scheduler.js"]
+    env_file: ../.env.production
+    restart: unless-stopped

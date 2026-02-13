@@ -1,0 +1,11 @@
+timestamp,file_changed,reason,risk_level
+2026-02-13T00:01:00Z,.env.production,Created production env template with all externalized variables,LOW
+2026-02-13T00:02:00Z,.gitignore,Added .env.production to gitignore for secret protection,LOW
+2026-02-13T00:03:00Z,Dockerfile,Created multi-stage production Docker build,MEDIUM
+2026-02-13T00:04:00Z,infrastructure/docker-compose.production.yml,Created production compose with 9 services (3 SaaS + 3 workers + 3 schedulers),MEDIUM
+2026-02-13T00:05:00Z,services/api-gateway/src/index.ts,Added @fastify/rate-limit — 100 req/min per tenant or IP,MEDIUM
+2026-02-13T00:06:00Z,services/api-gateway/src/index.ts,Restricted CORS to production URLs when NODE_ENV=production,MEDIUM
+2026-02-13T00:07:00Z,services/api-gateway/src/index.ts,Added Sentry error tracking integration (optional — uses SENTRY_DSN env var),MEDIUM
+2026-02-13T00:08:00Z,services/api-gateway/src/index.ts,Replaced logger:true with structured pino config (JSON in prod — pino-pretty in dev),LOW
+2026-02-13T00:09:00Z,services/api-gateway/src/index.ts,Added global error handler with Sentry reporting,MEDIUM
+2026-02-13T00:10:00Z,services/api-gateway/package.json,Added @fastify/rate-limit and @sentry/node dependencies,MEDIUM
