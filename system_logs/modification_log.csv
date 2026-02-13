@@ -9,3 +9,9 @@ timestamp,file_changed,reason,risk_level
 2026-02-13T00:08:00Z,services/api-gateway/src/index.ts,Replaced logger:true with structured pino config (JSON in prod — pino-pretty in dev),LOW
 2026-02-13T00:09:00Z,services/api-gateway/src/index.ts,Added global error handler with Sentry reporting,MEDIUM
 2026-02-13T00:10:00Z,services/api-gateway/package.json,Added @fastify/rate-limit and @sentry/node dependencies,MEDIUM
+2026-02-13T00:11:00Z,scripts/check-production-ready.sh,Created production readiness checker script,LOW
+2026-02-13T00:12:00Z,railway.json,Created Railway deployment config,MEDIUM
+2026-02-13T00:13:00Z,render.yaml,Created Render Blueprint deployment config (9 services),MEDIUM
+2026-02-13T00:14:00Z,scripts/setup-stripe-products.ts,Created Stripe product/price creation script,LOW
+2026-02-13T00:15:00Z,scripts/setup-stripe-webhook.sh,Created Stripe webhook endpoint setup script,LOW
+2026-02-13T00:16:00Z,scripts/verify-integrations-production.ts,Created production integration verifier (Gemini + Resend + Calendar + Stripe),LOW

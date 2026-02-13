@@ -1,0 +1,141 @@
+# ══════════════════════════════════════════════
+# GrowthOS Render Blueprint
+# ══════════════════════════════════════════════
+# Deploy: connect GitHub repo → Render auto-detects this file.
+# Each SaaS app runs as its own web service.
+# Workers and schedulers run as background workers.
+
+services:
+  # ── AI Booker SaaS ──────────────────────────
+  - type: web
+    name: growthos-booker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-booker/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "3001"
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  # ── AI Lead Qualifier SaaS ──────────────────
+  - type: web
+    name: growthos-leadqualifier
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-leadqualifier/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "3002"
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  # ── AI FollowUp SaaS ───────────────────────
+  - type: web
+    name: growthos-followup
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-followup/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "3003"
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  # ── Workers ────────────────────────────────
+  - type: worker
+    name: growthos-worker-booker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-booker/dist/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  - type: worker
+    name: growthos-worker-leadqualifier
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-leadqualifier/dist/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  - type: worker
+    name: growthos-worker-followup
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-followup/dist/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  # ── Schedulers ─────────────────────────────
+  - type: worker
+    name: growthos-scheduler-booker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-booker/dist/scheduler.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  - type: worker
+    name: growthos-scheduler-leadqualifier
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-leadqualifier/dist/scheduler.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+  - type: worker
+    name: growthos-scheduler-followup
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node apps/saas-followup/dist/scheduler.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromGroup: growthos-shared
+
+# ── Shared env var group ─────────────────────
+# Create this group in Render dashboard and add all secrets there.
+envVarGroups:
+  - name: growthos-shared
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GOOGLE_CALENDAR_CREDENTIALS
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID_BOOKER
+        sync: false
+      - key: STRIPE_PRICE_ID_LEADQUALIFIER
+        sync: false
+      - key: STRIPE_PRICE_ID_FOLLOWUP
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
