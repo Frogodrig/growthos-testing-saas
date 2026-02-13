@@ -9,7 +9,10 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@growthos/shared-types": "*"
+    "@growthos/shared-types": "*",
+    "resend": "^3.2.0",
+    "googleapis": "^131.0.0",
+    "stripe": "^14.14.0"
   },
   "devDependencies": {
     "typescript": "^5.3.0"

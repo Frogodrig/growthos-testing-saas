@@ -14,21 +14,41 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
       convertedLeads,
       totalMessages,
       repliedLeads,
+      activeSubs,
+      canceledSubs,
+      emailsSent,
+      webhooksFired,
     ] = await Promise.all([
       engine.prisma.lead.count({ where: { tenantId } }),
       engine.prisma.meeting.count({ where: { tenantId, status: { in: ["confirmed", "completed"] } } }),
       engine.prisma.lead.count({ where: { tenantId, status: "converted" } }),
       engine.prisma.message.count({ where: { tenantId, direction: "outbound" } }),
       engine.prisma.message.count({ where: { tenantId, direction: "inbound" } }),
+      engine.prisma.tenant.count({ where: { subscriptionStatus: "active" } }),
+      engine.prisma.tenant.count({ where: { subscriptionStatus: "canceled" } }),
+      engine.prisma.agentLog.count({ where: { tenantId, agentType: "send_email", success: true } }),
+      engine.prisma.agentLog.count({ where: { tenantId, agentType: "fire_webhook", success: true } }),
     ]);
 
-    const metrics: SaaSMetrics = {
+    const totalEverSubscribed = activeSubs + canceledSubs;
+    const churn = totalEverSubscribed > 0 ? canceledSubs / totalEverSubscribed : 0;
+
+    // MRR approximation: count of active subscriptions (actual price lookup requires Stripe API)
+    // For v1, we report the count — the real dollar amount will come from Stripe dashboard
+    const mrr = activeSubs;
+
+    const metrics: SaaSMetrics & {
+      emailsSent: number;
+      webhooksFired: number;
+    } = {
       leads: totalLeads,
       replyRate: totalMessages > 0 ? repliedLeads / totalMessages : 0,
       meetingsBooked,
       conversionRate: totalLeads > 0 ? convertedLeads / totalLeads : 0,
-      churn: 0, // TODO: Implement churn calculation
-      mrr: 0,   // TODO: Implement MRR calculation from billing
+      churn,
+      mrr,
+      emailsSent,
+      webhooksFired,
     };
 
     return reply.send(metrics);

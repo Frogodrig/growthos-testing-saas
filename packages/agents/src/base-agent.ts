@@ -1,29 +1,32 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { AgentInput, AgentOutput, AgentType } from "@growthos/shared-types";
 
 export abstract class BaseAgent {
-  protected client: Anthropic;
+  protected client: GoogleGenerativeAI;
 
   constructor(protected agentType: AgentType) {
-    this.client = new Anthropic();
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    this.client = new GoogleGenerativeAI(apiKey);
   }
 
   abstract get systemPrompt(): string;
 
-  protected async callClaude(userMessage: string): Promise<string> {
+  protected async callLLM(userMessage: string): Promise<string> {
     const startTime = Date.now();
 
-    const response = await this.client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 1024,
-      system: this.systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
+    const model = this.client.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: this.systemPrompt,
     });
 
-    const durationMs = Date.now() - startTime;
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
+    const result = await model.generateContent(userMessage);
+    const text = result.response.text();
 
-    console.log(`[Agent:${this.agentType}] Claude call completed in ${durationMs}ms`);
+    const durationMs = Date.now() - startTime;
+    console.log(`[Agent:${this.agentType}] Gemini call completed in ${durationMs}ms`);
     return text;
   }
 

@@ -17,13 +17,52 @@ export class WebhookAction implements ActionHandler {
       };
     }
 
-    // TODO: Implement actual HTTP request with retry logic
-    console.log(`[WebhookAction] Firing webhook url=${url} method=${method || "POST"} tenant=${request.tenantId}`);
+    const httpMethod = method || "POST";
+    const startTime = Date.now();
 
-    return {
-      success: true,
-      action: "fire_webhook",
-      data: { url, method: method || "POST", firedAt: new Date().toISOString() },
-    };
+    try {
+      const response = await fetch(url, {
+        method: httpMethod,
+        headers: {
+          "Content-Type": "application/json",
+          "X-GrowthOS-Tenant": request.tenantId,
+          "X-GrowthOS-Timestamp": new Date().toISOString(),
+        },
+        body: httpMethod !== "GET" ? JSON.stringify(body || {}) : undefined,
+      });
+
+      const durationMs = Date.now() - startTime;
+
+      console.log(
+        `[WebhookAction] ${httpMethod} ${url} → ${response.status} (${durationMs}ms) tenant=${request.tenantId}`
+      );
+
+      return {
+        success: response.ok,
+        action: "fire_webhook",
+        data: {
+          url,
+          method: httpMethod,
+          statusCode: response.status,
+          durationMs,
+          firedAt: new Date().toISOString(),
+        },
+        ...(!response.ok && { error: `HTTP ${response.status} ${response.statusText}` }),
+      };
+    } catch (err) {
+      const durationMs = Date.now() - startTime;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      console.error(
+        `[WebhookAction] ${httpMethod} ${url} → FAILED (${durationMs}ms) tenant=${request.tenantId}: ${errorMessage}`
+      );
+
+      return {
+        success: false,
+        action: "fire_webhook",
+        error: errorMessage,
+        data: { url, method: httpMethod, durationMs, firedAt: new Date().toISOString() },
+      };
+    }
   }
 }

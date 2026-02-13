@@ -31,7 +31,7 @@ Do NOT include any text outside the JSON object.`;
     console.log(`[FollowUpAgent] Processing lead=${input.leadId} tenant=${input.tenantId}`);
 
     const userMessage = `Generate a follow-up for this lead:\n${JSON.stringify(input.data, null, 2)}`;
-    const raw = await this.callClaude(userMessage);
+    const raw = await this.callLLM(userMessage);
     const output = this.parseJSON<FollowUpOutput>(raw);
 
     // Schema validation

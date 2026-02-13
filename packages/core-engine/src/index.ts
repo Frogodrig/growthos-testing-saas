@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import type { SaaSConfig } from "@growthos/shared-types";
+import type { Prisma } from "@prisma/client";
 import { createOrchestrator, AgentOrchestrator } from "@growthos/agent-orchestrator";
 import { createAgentRegistry, AgentRegistry } from "@growthos/agents";
 import { createRulesEngine, RulesEngine } from "@growthos/rules-engine";
@@ -52,6 +53,24 @@ export class CoreEngine {
     const rules = createRulesEngine(config.saas);
     const memory = createMemorySystem(prisma);
     const actions = createActionLayer();
+    actions.setLogger(async (entry) => {
+      try {
+        await prisma.agentLog.create({
+          data: {
+            tenantId: entry.tenantId,
+            workflowId: "action-layer",
+            agentType: entry.actionType,
+            input: entry.payload as Prisma.InputJsonValue,
+            output: { success: entry.success, error: entry.error } as Prisma.InputJsonValue,
+            durationMs: entry.durationMs,
+            success: entry.success,
+            error: entry.error,
+          },
+        });
+      } catch (err) {
+        console.error("[CoreEngine] Failed to log action to DB:", err);
+      }
+    });
     const eventBus = createEventBus({ redisUrl: config.redisUrl });
     const orchestrator = createOrchestrator(prisma, agents, rules, eventBus);
 

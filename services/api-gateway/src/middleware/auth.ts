@@ -32,3 +32,24 @@ export function getAuth(request: FastifyRequest): AuthPayload {
 export function generateToken(payload: AuthPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
 }
+
+// Paths that skip auth entirely (no JWT needed)
+const AUTH_EXEMPT_PATHS = [
+  "/api/tenant/create",
+  "/api/stripe/webhook",
+];
+
+// Paths that skip subscription enforcement (but still need auth)
+const SUBSCRIPTION_EXEMPT_PATHS = [
+  "/api/tenant/create",
+  "/api/billing/checkout",
+  "/api/stripe/webhook",
+];
+
+export function isAuthExempt(path: string): boolean {
+  return AUTH_EXEMPT_PATHS.some((p) => path.startsWith(p));
+}
+
+export function isSubscriptionExempt(path: string): boolean {
+  return SUBSCRIPTION_EXEMPT_PATHS.some((p) => path.startsWith(p));
+}

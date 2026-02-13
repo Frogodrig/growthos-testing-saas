@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@growthos/shared-types": "*",
-    "@anthropic-ai/sdk": "^0.20.0"
+    "@google/generative-ai": "^0.21.0"
   },
   "devDependencies": {
     "typescript": "^5.3.0"

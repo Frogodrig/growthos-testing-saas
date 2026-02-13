@@ -30,7 +30,7 @@ Do NOT include any text outside the JSON object.`;
     console.log(`[SchedulerAgent] Processing lead=${input.leadId} tenant=${input.tenantId}`);
 
     const userMessage = `Schedule a meeting based on this data:\n${JSON.stringify(input.data, null, 2)}`;
-    const raw = await this.callClaude(userMessage);
+    const raw = await this.callLLM(userMessage);
     const output = this.parseJSON<SchedulerOutput>(raw);
 
     // Schema validation

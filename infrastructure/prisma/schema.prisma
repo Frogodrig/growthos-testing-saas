@@ -12,12 +12,14 @@ datasource db {
 // ──────────────────────────────────────────────
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  domain    String   @unique
-  plan      String   @default("free") // free | starter | pro | enterprise
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String
+  domain             String   @unique
+  plan               String   @default("free") // free | starter | pro | enterprise
+  stripeCustomerId   String?  @unique
+  subscriptionStatus String   @default("none") // none | active | past_due | canceled | trialing
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   users           User[]
   leads           Lead[]
