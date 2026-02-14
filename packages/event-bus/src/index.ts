@@ -36,11 +36,21 @@ export class EventBus {
 
   async publish(event: DomainEvent): Promise<void> {
     const queue = this.getQueue(event.type);
-    await queue.add(event.type, event, {
-      removeOnComplete: 1000,
-      removeOnFail: 5000,
-    });
-    console.log(`[EventBus] Published: ${event.type} tenant=${event.tenantId}`);
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("EventBus publish timeout (5s)")), 5000)
+      );
+      await Promise.race([
+        queue.add(event.type, event, {
+          removeOnComplete: 1000,
+          removeOnFail: 5000,
+        }),
+        timeout,
+      ]);
+      console.log(`[EventBus] Published: ${event.type} tenant=${event.tenantId}`);
+    } catch (err) {
+      console.error(`[EventBus] Failed to publish ${event.type}: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   subscribe(eventType: EventType, handler: EventHandler): void {
