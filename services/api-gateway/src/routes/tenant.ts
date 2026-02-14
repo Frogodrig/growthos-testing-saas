@@ -50,6 +50,7 @@ export function registerTenantRoutes(
         domain,
         plan: "free",
         subscriptionStatus: isManualMode ? "pending" : "none",
+        saasProduct: saasConfig.slug,
       },
     });
 
@@ -77,22 +78,54 @@ export function registerTenantRoutes(
       },
     });
 
-    // Generate JWT
+    // Generate JWT (includes saasProduct for product-scope enforcement)
     const token = generateToken({
       userId: user.id,
       tenantId: tenant.id,
       role: "admin",
+      saasProduct: saasConfig.slug,
     });
 
     const updatedTenant = await engine.prisma.tenant.findUnique({ where: { id: tenant.id } });
 
-    console.log(`[Tenant] Created tenant="${name}" id=${tenant.id} stripe=${stripeCustomerId}`);
+    console.log(`[Tenant] Created tenant="${name}" id=${tenant.id} saas=${saasConfig.slug} stripe=${stripeCustomerId}`);
 
     return reply.status(201).send({
       tenant: updatedTenant,
       user,
       token,
     });
+  });
+
+  // ────────────────────────────────────────────
+  // FEND-001: POST /api/auth/login (no auth)
+  // ────────────────────────────────────────────
+  app.post("/api/auth/login", async (request, reply) => {
+    const { email } = request.body as { email: string };
+
+    if (!email) {
+      return reply.status(400).send({ error: "Missing required field: email" });
+    }
+
+    const user = await engine.prisma.user.findFirst({
+      where: { email },
+      include: { tenant: true },
+    });
+
+    if (!user) {
+      return reply.status(401).send({ error: "Invalid credentials" });
+    }
+
+    const token = generateToken({
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      saasProduct: user.tenant.saasProduct ?? undefined,
+    });
+
+    console.log(`[Auth] Login: user=${user.id} tenant=${user.tenantId} saas=${user.tenant.saasProduct}`);
+
+    return reply.send({ token, user, tenant: user.tenant });
   });
 
   // ────────────────────────────────────────────
@@ -212,9 +245,9 @@ export function registerTenantRoutes(
         data: { subscriptionStatus: "active" },
       });
 
-      console.log(`[Admin] Tenant activated: tenant_id=${tenant_id} at ${new Date().toISOString()}`);
+      console.log(`[Admin] Tenant activated: tenant_id=${tenant_id} saasProduct=${tenant.saasProduct} at ${new Date().toISOString()}`);
 
-      return reply.send({ success: true, tenant_id, status: "active" });
+      return reply.send({ success: true, tenant_id, status: "active", saasProduct: tenant.saasProduct });
     });
 
     console.log("[Gateway] Manual activation mode: POST /internal/activate-tenant registered");

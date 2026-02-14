@@ -18,6 +18,7 @@ model Tenant {
   plan               String   @default("free") // free | starter | pro | enterprise
   stripeCustomerId   String?  @unique
   subscriptionStatus String   @default("none") // none | active | past_due | canceled | trialing
+  saasProduct        String?  // saas-booker | saas-leadqualifier | saas-followup
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -29,6 +30,7 @@ model Tenant {
   agentLogs       AgentLog[]
   patternInsights PatternInsight[]
 
+  @@index([saasProduct])
   @@map("tenants")
 }
 

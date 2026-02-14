@@ -36,6 +36,7 @@ export function generateToken(payload: AuthPayload): string {
 // Paths that skip auth entirely (no JWT needed)
 const AUTH_EXEMPT_PATHS = [
   "/api/tenant/create",
+  "/api/auth/login",
   "/api/stripe/webhook",
   "/internal/activate-tenant",
 ];
@@ -43,6 +44,7 @@ const AUTH_EXEMPT_PATHS = [
 // Paths that skip subscription enforcement (but still need auth)
 const SUBSCRIPTION_EXEMPT_PATHS = [
   "/api/tenant/create",
+  "/api/auth/login",
   "/api/billing/checkout",
   "/api/stripe/webhook",
   "/internal/activate-tenant",

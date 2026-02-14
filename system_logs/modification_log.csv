@@ -15,3 +15,13 @@ timestamp,file_changed,reason,risk_level
 2026-02-13T00:14:00Z,scripts/setup-stripe-products.ts,Created Stripe product/price creation script,LOW
 2026-02-13T00:15:00Z,scripts/setup-stripe-webhook.sh,Created Stripe webhook endpoint setup script,LOW
 2026-02-13T00:16:00Z,scripts/verify-integrations-production.ts,Created production integration verifier (Gemini + Resend + Calendar + Stripe),LOW
+2026-02-14T11:30:00Z,apps/frontend/Dockerfile,Created Dockerfile for frontend static SPA (Vite build + serve),MEDIUM
+2026-02-14T11:30:00Z,railway.json,Deleted — moved to per-service RAILWAY_DOCKERFILE_PATH env vars to support frontend + backend coexisting,MEDIUM
+2026-02-14T11:30:00Z,Railway:frontend-booker,Created Railway service with VITE_SAAS_SLUG=saas-booker and VITE_API_URL=https://saas-booker-production.up.railway.app,MEDIUM
+2026-02-14T11:30:00Z,Railway:frontend-leadqualifier,Created Railway service with VITE_SAAS_SLUG=saas-leadqualifier and VITE_API_URL=https://saas-leadqualifier-production.up.railway.app,MEDIUM
+2026-02-14T11:30:00Z,Railway:frontend-followup,Created Railway service with VITE_SAAS_SLUG=saas-followup and VITE_API_URL=https://saas-followup-production.up.railway.app,MEDIUM
+2026-02-14T11:30:00Z,Railway:saas-booker,Set BOOKER_URL for CORS to allow frontend-booker-production.up.railway.app,HIGH
+2026-02-14T11:30:00Z,Railway:saas-leadqualifier,Set LEADQUALIFIER_URL for CORS to allow frontend-leadqualifier-production.up.railway.app,HIGH
+2026-02-14T11:30:00Z,Railway:saas-followup,Set FOLLOWUP_URL for CORS to allow frontend-followup-production.up.railway.app,HIGH
+2026-02-14T11:30:00Z,Railway:all-backends,Set RAILWAY_DOCKERFILE_PATH=Dockerfile on all 3 backend services after railway.json removal,MEDIUM
+2026-02-14T11:30:00Z,Railway:all-backends,Redeployed all 3 backend services with FEND-001 login endpoint + CORS vars,MEDIUM

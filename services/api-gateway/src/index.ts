@@ -101,7 +101,7 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
     await authMiddleware(request, reply);
   });
 
-  // Subscription enforcement middleware (after auth)
+  // Product-scope + subscription enforcement middleware (after auth)
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url;
 
@@ -122,13 +122,36 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
 
     const tenant = await engine.prisma.tenant.findUnique({
       where: { id: auth.tenantId },
-      select: { subscriptionStatus: true },
+      select: { subscriptionStatus: true, saasProduct: true },
     });
 
     if (!tenant) {
       return reply.status(404).send({ error: "Tenant not found" });
     }
 
+    // TBND-004: Product-scope enforcement
+    const tokenProduct = auth.saasProduct as string | undefined;
+    const dbProduct = tenant.saasProduct;
+    const runningProduct = config.saasConfig.slug;
+
+    if (tokenProduct) {
+      // Token has product claim — must match running SaaS
+      if (tokenProduct !== runningProduct) {
+        return reply.status(403).send({
+          error: "Token not valid for this product",
+          expected: runningProduct,
+          got: tokenProduct,
+        });
+      }
+    } else if (dbProduct) {
+      // Legacy token (no product claim) but tenant is now product-bound in DB
+      return reply.status(401).send({
+        error: "Token outdated — please re-authenticate",
+      });
+    }
+    // else: both null — true legacy tenant, allow through
+
+    // Subscription enforcement
     const allowed = ["active", "trialing"];
     // In manual payment mode, also allow 'pending' (signed up, awaiting admin activation)
     if (process.env.PAYMENT_MODE === "manual") {
