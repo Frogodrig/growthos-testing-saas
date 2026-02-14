@@ -46,8 +46,13 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
     (req, body, done) => {
       // Store raw body for Stripe webhook signature verification
       (req as any).rawBody = body;
+      const str = body.toString();
+      if (!str || str.trim().length === 0) {
+        done(null, {});
+        return;
+      }
       try {
-        const json = JSON.parse(body.toString());
+        const json = JSON.parse(str);
         done(null, json);
       } catch (err) {
         done(err as Error, undefined);
