@@ -7,6 +7,21 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
   // GrowthOS metrics endpoint
   app.get("/metrics", async (request, reply) => {
     const { tenantId } = getAuth(request);
+    const { product } = request.query as { product?: string };
+
+    // Build tenant filter: always tenant-scoped, optionally product-filtered
+    const tenantWhere = product
+      ? { tenantId, tenant: { saasProduct: product } }
+      : { tenantId };
+    const agentLogWhere = product
+      ? { tenantId, saasProduct: product }
+      : { tenantId };
+    const tenantCountWhere = product
+      ? { subscriptionStatus: "active" as const, saasProduct: product }
+      : { subscriptionStatus: "active" as const };
+    const canceledCountWhere = product
+      ? { subscriptionStatus: "canceled" as const, saasProduct: product }
+      : { subscriptionStatus: "canceled" as const };
 
     const [
       totalLeads,
@@ -19,15 +34,15 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
       emailsSent,
       webhooksFired,
     ] = await Promise.all([
-      engine.prisma.lead.count({ where: { tenantId } }),
-      engine.prisma.meeting.count({ where: { tenantId, status: { in: ["confirmed", "completed"] } } }),
-      engine.prisma.lead.count({ where: { tenantId, status: "converted" } }),
-      engine.prisma.message.count({ where: { tenantId, direction: "outbound" } }),
-      engine.prisma.message.count({ where: { tenantId, direction: "inbound" } }),
-      engine.prisma.tenant.count({ where: { subscriptionStatus: "active" } }),
-      engine.prisma.tenant.count({ where: { subscriptionStatus: "canceled" } }),
-      engine.prisma.agentLog.count({ where: { tenantId, agentType: "send_email", success: true } }),
-      engine.prisma.agentLog.count({ where: { tenantId, agentType: "fire_webhook", success: true } }),
+      engine.prisma.lead.count({ where: tenantWhere }),
+      engine.prisma.meeting.count({ where: { ...tenantWhere, status: { in: ["confirmed", "completed"] } } }),
+      engine.prisma.lead.count({ where: { ...tenantWhere, status: "converted" } }),
+      engine.prisma.message.count({ where: { ...tenantWhere, direction: "outbound" } }),
+      engine.prisma.message.count({ where: { ...tenantWhere, direction: "inbound" } }),
+      engine.prisma.tenant.count({ where: tenantCountWhere }),
+      engine.prisma.tenant.count({ where: canceledCountWhere }),
+      engine.prisma.agentLog.count({ where: { ...agentLogWhere, agentType: "send_email", success: true } }),
+      engine.prisma.agentLog.count({ where: { ...agentLogWhere, agentType: "fire_webhook", success: true } }),
     ]);
 
     const totalEverSubscribed = activeSubs + canceledSubs;

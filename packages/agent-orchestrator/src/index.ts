@@ -126,6 +126,7 @@ export class AgentOrchestrator {
         durationMs,
         success,
         error,
+        saasProduct: this.rules.getConfig().slug,
       },
     });
 
@@ -168,6 +169,7 @@ export class AgentOrchestrator {
         goal: this.rules.primaryGoal,
         allowedAgents: this.rules.getAllowedAgents(),
         metadata: data as unknown as Prisma.InputJsonValue,
+        saasProduct: this.rules.getConfig().slug,
       },
     });
 

@@ -39,6 +39,7 @@ const AUTH_EXEMPT_PATHS = [
   "/api/auth/login",
   "/api/stripe/webhook",
   "/internal/activate-tenant",
+  "/internal/experiment-stats",
 ];
 
 // Paths that skip subscription enforcement (but still need auth)
@@ -48,6 +49,7 @@ const SUBSCRIPTION_EXEMPT_PATHS = [
   "/api/billing/checkout",
   "/api/stripe/webhook",
   "/internal/activate-tenant",
+  "/internal/experiment-stats",
 ];
 
 export function isAuthExempt(path: string): boolean {

@@ -53,6 +53,7 @@ export class CoreEngine {
     const rules = createRulesEngine(config.saas);
     const memory = createMemorySystem(prisma);
     const actions = createActionLayer();
+    const saasSlug = config.saas.slug;
     actions.setLogger(async (entry) => {
       try {
         await prisma.agentLog.create({
@@ -65,6 +66,7 @@ export class CoreEngine {
             durationMs: entry.durationMs,
             success: entry.success,
             error: entry.error,
+            saasProduct: saasSlug,
           },
         });
       } catch (err) {

@@ -125,6 +125,7 @@ model Workflow {
   goal          String
   allowedAgents Json     @default("[]") // AgentType[]
   metadata      Json     @default("{}")
+  saasProduct   String?  // saas-booker | saas-leadqualifier | saas-followup
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -134,26 +135,29 @@ model Workflow {
 
   @@index([tenantId])
   @@index([tenantId, currentState])
+  @@index([saasProduct])
   @@map("workflows")
 }
 
 model AgentLog {
-  id         String   @id @default(uuid())
-  tenantId   String
-  workflowId String
-  agentType  String // qualifier | scheduler | followup
-  input      Json
-  output     Json
-  durationMs Int
-  success    Boolean
-  error      String?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  tenantId    String
+  workflowId  String
+  agentType   String // qualifier | scheduler | followup
+  input       Json
+  output      Json
+  durationMs  Int
+  success     Boolean
+  error       String?
+  saasProduct String?  // saas-booker | saas-leadqualifier | saas-followup
+  createdAt   DateTime @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([workflowId])
+  @@index([saasProduct])
   @@map("agent_logs")
 }
 

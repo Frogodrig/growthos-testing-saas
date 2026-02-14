@@ -250,6 +250,37 @@ export function registerTenantRoutes(
       return reply.send({ success: true, tenant_id, status: "active", saasProduct: tenant.saasProduct });
     });
 
+    // ────────────────────────────────────────────
+    // XTAG-005: GET /internal/experiment-stats (manual mode only, ADMIN_SECRET auth)
+    // ────────────────────────────────────────────
+    app.get("/internal/experiment-stats", async (request, reply) => {
+      const adminSecret = request.headers["x-admin-secret"] as string;
+      if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+        return reply.status(401).send({ error: "Unauthorized — invalid or missing X-Admin-Secret header" });
+      }
+
+      const slugs = ["saas-booker", "saas-leadqualifier", "saas-followup"];
+
+      const products = await Promise.all(
+        slugs.map(async (slug) => {
+          const [totalTenants, activeTenants, pendingTenants, totalWorkflows, completedWorkflows, totalLeads] =
+            await Promise.all([
+              engine.prisma.tenant.count({ where: { saasProduct: slug } }),
+              engine.prisma.tenant.count({ where: { saasProduct: slug, subscriptionStatus: "active" } }),
+              engine.prisma.tenant.count({ where: { saasProduct: slug, subscriptionStatus: "pending" } }),
+              engine.prisma.workflow.count({ where: { saasProduct: slug } }),
+              engine.prisma.workflow.count({ where: { saasProduct: slug, currentState: { in: ["meeting_scheduled", "following_up"] } } }),
+              engine.prisma.lead.count({ where: { tenant: { saasProduct: slug } } }),
+            ]);
+
+          return { slug, totalTenants, activeTenants, pendingTenants, totalWorkflows, completedWorkflows, totalLeads };
+        })
+      );
+
+      return reply.send({ products });
+    });
+
     console.log("[Gateway] Manual activation mode: POST /internal/activate-tenant registered");
+    console.log("[Gateway] Manual activation mode: GET /internal/experiment-stats registered");
   }
 }
