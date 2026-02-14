@@ -37,18 +37,22 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
     // For v1, we report the count — the real dollar amount will come from Stripe dashboard
     const mrr = activeSubs;
 
+    const isManualMode = process.env.PAYMENT_MODE === "manual";
+
     const metrics: SaaSMetrics & {
       emailsSent: number;
       webhooksFired: number;
+      activationMode: string;
     } = {
       leads: totalLeads,
       replyRate: totalMessages > 0 ? repliedLeads / totalMessages : 0,
       meetingsBooked,
       conversionRate: totalLeads > 0 ? convertedLeads / totalLeads : 0,
       churn,
-      mrr,
+      mrr: isManualMode ? 0 : mrr,
       emailsSent,
       webhooksFired,
+      activationMode: isManualMode ? "manual" : "stripe",
     };
 
     return reply.send(metrics);

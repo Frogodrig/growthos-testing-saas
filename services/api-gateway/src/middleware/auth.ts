@@ -37,6 +37,7 @@ export function generateToken(payload: AuthPayload): string {
 const AUTH_EXEMPT_PATHS = [
   "/api/tenant/create",
   "/api/stripe/webhook",
+  "/internal/activate-tenant",
 ];
 
 // Paths that skip subscription enforcement (but still need auth)
@@ -44,6 +45,7 @@ const SUBSCRIPTION_EXEMPT_PATHS = [
   "/api/tenant/create",
   "/api/billing/checkout",
   "/api/stripe/webhook",
+  "/internal/activate-tenant",
 ];
 
 export function isAuthExempt(path: string): boolean {

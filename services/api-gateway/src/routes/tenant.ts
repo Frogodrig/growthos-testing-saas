@@ -41,26 +41,30 @@ export function registerTenantRoutes(
       return reply.status(409).send({ error: "Tenant with this name already exists" });
     }
 
-    // Create tenant
+    const isManualMode = process.env.PAYMENT_MODE === "manual";
+
+    // Create tenant — in manual mode, start as 'pending' (awaiting admin activation)
     const tenant = await engine.prisma.tenant.create({
       data: {
         name,
         domain,
         plan: "free",
-        subscriptionStatus: "none",
+        subscriptionStatus: isManualMode ? "pending" : "none",
       },
     });
 
-    // Create Stripe customer
+    // Create Stripe customer (skip in manual mode)
     let stripeCustomerId: string | null = null;
-    try {
-      stripeCustomerId = await createStripeCustomer(tenant.id, email, name);
-      await engine.prisma.tenant.update({
-        where: { id: tenant.id },
-        data: { stripeCustomerId },
-      });
-    } catch (err) {
-      console.error(`[Tenant] Stripe customer creation failed for tenant=${tenant.id}:`, err);
+    if (!isManualMode) {
+      try {
+        stripeCustomerId = await createStripeCustomer(tenant.id, email, name);
+        await engine.prisma.tenant.update({
+          where: { id: tenant.id },
+          data: { stripeCustomerId },
+        });
+      } catch (err) {
+        console.error(`[Tenant] Stripe customer creation failed for tenant=${tenant.id}:`, err);
+      }
     }
 
     // Create admin user
@@ -133,6 +137,11 @@ export function registerTenantRoutes(
   // ACTV-003: POST /api/stripe/webhook (no auth)
   // ────────────────────────────────────────────
   app.post("/api/stripe/webhook", async (request, reply) => {
+    // MACT-004: In manual mode, webhook exists but doesn't process events
+    if (process.env.PAYMENT_MODE === "manual") {
+      return reply.send({ status: "ignored", reason: "manual activation mode" });
+    }
+
     const signature = request.headers["stripe-signature"] as string;
     if (!signature) {
       return reply.status(400).send({ error: "Missing stripe-signature header" });
@@ -177,4 +186,37 @@ export function registerTenantRoutes(
 
     return reply.send({ received: true });
   });
+
+  // ────────────────────────────────────────────
+  // MACT-003: POST /internal/activate-tenant (manual mode only, ADMIN_SECRET auth)
+  // ────────────────────────────────────────────
+  if (process.env.PAYMENT_MODE === "manual") {
+    app.post("/internal/activate-tenant", async (request, reply) => {
+      const adminSecret = request.headers["x-admin-secret"] as string;
+      if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+        return reply.status(401).send({ error: "Unauthorized — invalid or missing X-Admin-Secret header" });
+      }
+
+      const { tenant_id } = request.body as { tenant_id: string };
+      if (!tenant_id) {
+        return reply.status(400).send({ error: "Missing required field: tenant_id" });
+      }
+
+      const tenant = await engine.prisma.tenant.findUnique({ where: { id: tenant_id } });
+      if (!tenant) {
+        return reply.status(404).send({ error: "Tenant not found" });
+      }
+
+      await engine.prisma.tenant.update({
+        where: { id: tenant_id },
+        data: { subscriptionStatus: "active" },
+      });
+
+      console.log(`[Admin] Tenant activated: tenant_id=${tenant_id} at ${new Date().toISOString()}`);
+
+      return reply.send({ success: true, tenant_id, status: "active" });
+    });
+
+    console.log("[Gateway] Manual activation mode: POST /internal/activate-tenant registered");
+  }
 }

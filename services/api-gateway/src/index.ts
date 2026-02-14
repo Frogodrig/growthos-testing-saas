@@ -130,6 +130,10 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
     }
 
     const allowed = ["active", "trialing"];
+    // In manual payment mode, also allow 'pending' (signed up, awaiting admin activation)
+    if (process.env.PAYMENT_MODE === "manual") {
+      allowed.push("pending");
+    }
     // In dev mode, also allow "none" so existing dev workflows don't break
     if (process.env.NODE_ENV !== "production") {
       allowed.push("none", "past_due");
@@ -161,7 +165,11 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   });
 
   // Health check (no auth)
-  app.get("/health", async () => ({ status: "ok", saas: config.saasConfig.name }));
+  app.get("/health", async () => ({
+    status: "ok",
+    saas: config.saasConfig.name,
+    paymentMode: process.env.PAYMENT_MODE || "stripe",
+  }));
 
   // Register routes
   registerTenantRoutes(app, engine, config.saasConfig);
