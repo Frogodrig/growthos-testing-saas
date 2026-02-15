@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import { CoreEngine } from "@growthos/core-engine";
 import { getAuth } from "../middleware/auth";
+import { fetchLinkedInProfile } from "../lib/linkedin";
 
 export function registerLeadRoutes(app: FastifyInstance, engine: CoreEngine): void {
   // Create a new lead and kick off workflow
@@ -19,8 +20,17 @@ export function registerLeadRoutes(app: FastifyInstance, engine: CoreEngine): vo
       return reply.status(400).send({ error: "name, email, and source are required" });
     }
 
+    // Enrich metadata with LinkedIn profile data if URL provided
+    const enrichedMetadata = { ...(metadata || {}) };
+    if (enrichedMetadata.linkedinUrl && typeof enrichedMetadata.linkedinUrl === "string") {
+      const linkedinData = await fetchLinkedInProfile(enrichedMetadata.linkedinUrl);
+      if (linkedinData) {
+        enrichedMetadata.linkedinData = linkedinData;
+      }
+    }
+
     const lead = await engine.prisma.lead.create({
-      data: { tenantId, name, email, phone, source, metadata: (metadata || {}) as Prisma.InputJsonValue },
+      data: { tenantId, name, email, phone, source, metadata: enrichedMetadata as Prisma.InputJsonValue },
     });
 
     // Start workflow for this lead
@@ -28,7 +38,7 @@ export function registerLeadRoutes(app: FastifyInstance, engine: CoreEngine): vo
       leadName: name,
       leadEmail: email,
       leadSource: source,
-      ...metadata,
+      ...enrichedMetadata,
     });
 
     console.log(`[API] Lead created: ${lead.id} workflow: ${workflowId}`);

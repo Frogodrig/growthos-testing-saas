@@ -159,6 +159,42 @@ export function LeadDetail() {
               <span className="text-gray-500">Created</span>
               <p className="text-gray-900">{new Date(lead.createdAt).toLocaleString()}</p>
             </div>
+            {Boolean(lead.metadata?.jobTitle) && (
+              <div>
+                <span className="text-gray-500">Job Title</span>
+                <p className="text-gray-900">{String(lead.metadata!.jobTitle)}</p>
+              </div>
+            )}
+            {Boolean(lead.metadata?.companySize) && (
+              <div>
+                <span className="text-gray-500">Company Size</span>
+                <p className="text-gray-900">{String(lead.metadata!.companySize)}</p>
+              </div>
+            )}
+            {Boolean(lead.metadata?.budgetRange) && (
+              <div>
+                <span className="text-gray-500">Budget Range</span>
+                <p className="text-gray-900">{String(lead.metadata!.budgetRange)}</p>
+              </div>
+            )}
+            {Boolean(lead.metadata?.timeline) && (
+              <div>
+                <span className="text-gray-500">Timeline</span>
+                <p className="text-gray-900">{String(lead.metadata!.timeline)}</p>
+              </div>
+            )}
+            {Boolean(lead.metadata?.linkedinUrl) && (
+              <div>
+                <span className="text-gray-500">LinkedIn</span>
+                <p><a href={String(lead.metadata!.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">View Profile</a></p>
+              </div>
+            )}
+            {Boolean(lead.metadata?.intent) && (
+              <div className="col-span-2">
+                <span className="text-gray-500">Intent</span>
+                <p className="text-gray-900">{String(lead.metadata!.intent)}</p>
+              </div>
+            )}
           </div>
         </div>
 

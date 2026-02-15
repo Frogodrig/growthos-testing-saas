@@ -137,6 +137,21 @@ export class AgentOrchestrator {
       },
     });
 
+    // Persist qualifier output back to Lead record
+    if (success && transition.agent === "qualifier") {
+      const qualifierOutput = output as Record<string, unknown>;
+      const updateData: Record<string, unknown> = {};
+      if (qualifierOutput.score != null) updateData.score = Number(qualifierOutput.score);
+      if (qualifierOutput.qualificationReason) updateData.qualificationReason = String(qualifierOutput.qualificationReason);
+      if (Object.keys(updateData).length > 0) {
+        await this.prisma.lead.update({
+          where: { id: workflow.leadId },
+          data: updateData as Prisma.LeadUpdateInput,
+        });
+        console.log(`[Orchestrator] Updated Lead ${workflow.leadId} with qualifier output: score=${updateData.score}`);
+      }
+    }
+
     // Update workflow state
     const nextState = success ? transition.successState : transition.failState;
     await this.prisma.workflow.update({
