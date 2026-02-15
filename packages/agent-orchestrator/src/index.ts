@@ -52,6 +52,13 @@ const TRANSITIONS: Transition[] = [
     failState: "escalated",
     emitOnSuccess: "followup_required",
   },
+  {
+    from: "lead_received",
+    agent: "followup",
+    successState: "following_up",
+    failState: "escalated",
+    emitOnSuccess: "followup_required",
+  },
 ];
 
 // ──────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api, ApiError } from "../lib/api";
-import { config } from "../lib/config";
+import { productCopy } from "../lib/product";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -38,7 +38,7 @@ export function Login() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-1">
-          {config.productName}
+          {productCopy.loginHeading}
         </h1>
         <p className="text-center text-gray-500 mb-8">Log in to your account</p>
 

@@ -60,7 +60,13 @@ export function registerLeadRoutes(app: FastifyInstance, engine: CoreEngine): vo
 
     const lead = await engine.prisma.lead.findFirst({
       where: { id, tenantId },
-      include: { meetings: true, messages: true, workflows: true },
+      include: {
+        meetings: true,
+        messages: true,
+        workflows: {
+          include: { agentLogs: { orderBy: { createdAt: "asc" } } },
+        },
+      },
     });
 
     if (!lead) {

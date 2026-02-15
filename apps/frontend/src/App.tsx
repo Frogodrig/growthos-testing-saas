@@ -6,6 +6,7 @@ import { Signup } from "./pages/Signup";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { Leads } from "./pages/Leads";
+import { LeadDetail } from "./pages/LeadDetail";
 import { Metrics } from "./pages/Metrics";
 
 export function App() {
@@ -21,6 +22,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leads/:id"
+            element={
+              <ProtectedRoute>
+                <LeadDetail />
               </ProtectedRoute>
             }
           />

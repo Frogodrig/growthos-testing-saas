@@ -1,7 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { CoreEngine } from "@growthos/core-engine";
 import { getAuth } from "../middleware/auth";
-import type { SaaSMetrics } from "@growthos/shared-types";
 
 export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine): void {
   // GrowthOS metrics endpoint
@@ -14,6 +13,9 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
       ? { tenantId, tenant: { saasProduct: product } }
       : { tenantId };
     const agentLogWhere = product
+      ? { tenantId, saasProduct: product }
+      : { tenantId };
+    const workflowWhere = product
       ? { tenantId, saasProduct: product }
       : { tenantId };
     const tenantCountWhere = product
@@ -33,6 +35,13 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
       canceledSubs,
       emailsSent,
       webhooksFired,
+      qualifiedLeads,
+      disqualifiedLeads,
+      avgScoreResult,
+      totalWorkflows,
+      activeWorkflows,
+      escalatedWorkflows,
+      followupsSent,
     ] = await Promise.all([
       engine.prisma.lead.count({ where: tenantWhere }),
       engine.prisma.meeting.count({ where: { ...tenantWhere, status: { in: ["confirmed", "completed"] } } }),
@@ -43,22 +52,22 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
       engine.prisma.tenant.count({ where: canceledCountWhere }),
       engine.prisma.agentLog.count({ where: { ...agentLogWhere, agentType: "send_email", success: true } }),
       engine.prisma.agentLog.count({ where: { ...agentLogWhere, agentType: "fire_webhook", success: true } }),
+      engine.prisma.lead.count({ where: { ...tenantWhere, status: { in: ["qualified", "converted"] } } }),
+      engine.prisma.lead.count({ where: { ...tenantWhere, score: { lt: 50, not: null } } }),
+      engine.prisma.lead.aggregate({ where: { ...tenantWhere, score: { not: null } }, _avg: { score: true } }),
+      engine.prisma.workflow.count({ where: workflowWhere }),
+      engine.prisma.workflow.count({ where: { ...workflowWhere, currentState: { notIn: ["meeting_scheduled", "escalated", "failed"] } } }),
+      engine.prisma.workflow.count({ where: { ...workflowWhere, currentState: "escalated" } }),
+      engine.prisma.agentLog.count({ where: { ...agentLogWhere, agentType: "followup", success: true } }),
     ]);
 
     const totalEverSubscribed = activeSubs + canceledSubs;
     const churn = totalEverSubscribed > 0 ? canceledSubs / totalEverSubscribed : 0;
-
-    // MRR approximation: count of active subscriptions (actual price lookup requires Stripe API)
-    // For v1, we report the count — the real dollar amount will come from Stripe dashboard
     const mrr = activeSubs;
-
     const isManualMode = process.env.PAYMENT_MODE === "manual";
+    const avgScore = avgScoreResult._avg.score ?? 0;
 
-    const metrics: SaaSMetrics & {
-      emailsSent: number;
-      webhooksFired: number;
-      activationMode: string;
-    } = {
+    const metrics = {
       leads: totalLeads,
       replyRate: totalMessages > 0 ? repliedLeads / totalMessages : 0,
       meetingsBooked,
@@ -68,6 +77,13 @@ export function registerMetricsRoutes(app: FastifyInstance, engine: CoreEngine):
       emailsSent,
       webhooksFired,
       activationMode: isManualMode ? "manual" : "stripe",
+      qualifiedLeads,
+      disqualifiedLeads,
+      avgScore,
+      totalWorkflows,
+      activeWorkflows,
+      escalatedLeads: escalatedWorkflows,
+      followupsSent,
     };
 
     return reply.send(metrics);
